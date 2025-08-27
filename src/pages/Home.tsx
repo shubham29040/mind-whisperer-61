@@ -70,11 +70,11 @@ const Home = () => {
             </div>
 
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-focus rounded-3xl blur-3xl opacity-20"></div>
+              <div className="absolute inset-0 bg-gradient-focus rounded-3xl blur-3xl opacity-20 animate-pulse"></div>
               <img 
                 src={heroImage}
                 alt="Mental wellness and serenity"
-                className="relative rounded-3xl shadow-card w-full h-auto"
+                className="relative rounded-3xl shadow-card w-full h-auto animate-float"
               />
             </div>
           </div>
