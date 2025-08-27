@@ -1,11 +1,9 @@
-import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Home, MessageSquare, TrendingUp, User, Menu, X } from 'lucide-react';
+import { Home, MessageSquare, TrendingUp, User } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
 const Navigation = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -23,14 +21,6 @@ const Navigation = () => {
       {/* Mobile Navigation Header */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-card/90 backdrop-blur-sm border-b border-border/50 p-4 flex justify-between items-center md:hidden">
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsOpen(!isOpen)}
-            className="h-9 w-9"
-          >
-            {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </Button>
           <h1 className="font-semibold text-lg">MindCare</h1>
         </div>
         <ThemeToggle />
@@ -53,10 +43,7 @@ const Navigation = () => {
                     : 'text-muted-foreground'
                   }
                 `}
-                onClick={() => {
-                  navigate(item.path);
-                  setIsOpen(false);
-                }}
+                onClick={() => navigate(item.path)}
               >
                 <Icon className="h-4 w-4" />
                 <span className="text-xs">{item.label}</span>
@@ -66,22 +53,9 @@ const Navigation = () => {
         </div>
       </div>
 
-      {/* Mobile Overlay */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      {/* Navigation Sidebar */}
-      <nav className={`
-        fixed top-0 left-0 h-full w-72 bg-card/95 backdrop-blur-sm border-r border-border/50 z-50
-        transform transition-transform duration-300 ease-gentle
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        md:translate-x-0 md:w-64 md:relative md:h-screen
-      `}>
-        <div className="p-6 pt-16 md:pt-6">
+      {/* Navigation Sidebar - Desktop Only */}
+      <nav className="hidden md:block fixed top-0 left-0 h-screen w-64 bg-card/95 backdrop-blur-sm border-r border-border/50 z-50">
+        <div className="p-6">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 bg-gradient-wellness rounded-full flex items-center justify-center">
               <MessageSquare className="h-5 w-5 text-primary-foreground" />
@@ -90,9 +64,7 @@ const Navigation = () => {
               <h1 className="font-semibold text-lg text-foreground">MindCare</h1>
               <p className="text-sm text-muted-foreground">Your Mental Health Companion</p>
             </div>
-            <div className="hidden md:block">
-              <ThemeToggle />
-            </div>
+            <ThemeToggle />
           </div>
 
           <div className="space-y-2">
@@ -109,10 +81,7 @@ const Navigation = () => {
                       : 'hover:bg-accent/50'
                     }
                   `}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsOpen(false);
-                  }}
+                  onClick={() => navigate(item.path)}
                 >
                   <Icon className="h-5 w-5" />
                   {item.label}
