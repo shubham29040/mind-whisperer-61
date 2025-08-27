@@ -1,1 +1,4 @@
 project_id = "ukeywuijdpeynqqymbhx"
+
+[functions.gemini-chat]
+verify_jwt = false
