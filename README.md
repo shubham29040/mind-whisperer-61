@@ -1,73 +1,66 @@
-# Welcome to your Lovable project
+# 🌿 Mind Whisperer – Mental Health Companion
 
-## Project info
+![Mind Whisperer](https://preview--mind-whisperer-61.lovable.app/)
 
-**URL**: https://lovable.dev/projects/1bc35ce1-5c3c-4709-864d-b367ef512325
+A **mental health companion web app** built with modern technologies that helps users **track their mood, chat with an AI-based bot, and receive personalized recommendations** like motivational quotes, mindfulness exercises, and relaxing content.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🚀 Features
 
-**Use Lovable**
+✅ **AI Chatbot** – Provides empathetic responses and mental health guidance  
+✅ **Mood Detection** – Detect emotions using NLP (e.g., Happy, Sad, Stressed)  
+✅ **Mood Tracker Dashboard** – Visual graph to track mood trends over time  
+✅ **Authentication** – Sign up / Log in with Supabase  
+✅ **Anonymous Mode** – Start chatting without creating an account  
+✅ **Responsive UI** – Works seamlessly on desktop and mobile  
+✅ **Beautiful UI** – Built using Tailwind CSS + shadcn UI for a calming experience  
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/1bc35ce1-5c3c-4709-864d-b367ef512325) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🛠️ Tech Stack
 
-**Use your preferred IDE**
+**Frontend:**  
+- [React](https://reactjs.org/) with [TypeScript](https://www.typescriptlang.org/)  
+- [Vite](https://vitejs.dev/) for fast builds  
+- [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) for styling  
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+**Backend & Database:**  
+- [Supabase](https://supabase.com/) – Authentication & data storage  
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+**AI / NLP (Future Enhancements):**  
+- [HuggingFace Transformers](https://huggingface.co/) or OpenAI API for emotion detection  
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 📂 Project Structure
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+mind-whisperer/
+├── public/ # Static assets
+├── src/
+│ ├── components/ # Reusable UI components
+│ ├── pages/ # App pages (Chat, Mood Tracker, Profile)
+│ ├── hooks/ # Custom React hooks
+│ ├── lib/ # Utility functions, Supabase config
+│ └── App.tsx # Main App component
+├── supabase/ # Database and API configuration
+├── .env.example # Environment variables template
+├── package.json # Project metadata and scripts
+└── vite.config.ts # Vite configuration
 
-# Step 3: Install the necessary dependencies.
-npm i
+---
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
 
-**Edit a file directly in GitHub**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
 
-**Use GitHub Codespaces**
+## ⚙️ Installation & Setup
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### 1. Clone the repository
+```bash
+git clone https://github.com/your-username/mind-whisperer.git
+cd mind-whisperer
 
-## What technologies are used for this project?
 
-This project is built with:
+```bash
+npm install
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/1bc35ce1-5c3c-4709-864d-b367ef512325) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
