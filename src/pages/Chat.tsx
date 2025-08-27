@@ -67,8 +67,8 @@ const Chat = () => {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Conversations Sidebar */}
-      <div className="w-80 border-r border-border bg-card p-4 hidden md:block">
+      {/* Conversations Sidebar - Hidden on mobile, shown on larger screens */}
+      <div className="w-80 border-r border-border bg-card p-4 hidden lg:block">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-foreground">Conversations</h2>
           <Button 
@@ -102,15 +102,23 @@ const Chat = () => {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <div className="border-b border-border bg-card/50 backdrop-blur-sm p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">MindCare Chat</h1>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl md:text-2xl font-bold text-foreground truncate">MindCare Chat</h1>
               <p className="text-sm text-muted-foreground">Your AI Mental Wellness Companion</p>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 flex-shrink-0">
+              {/* New Chat button for mobile */}
+              <Button 
+                size="sm" 
+                onClick={handleNewConversation}
+                className="lg:hidden bg-primary hover:bg-primary/90"
+              >
+                New
+              </Button>
               <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                 🟢 Online
               </Badge>
@@ -122,9 +130,9 @@ const Chat = () => {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 && !isLoading && (
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">🧠</div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to MindCare</h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
+              <div className="text-4xl md:text-6xl mb-4">🧠</div>
+              <h3 className="text-lg md:text-xl font-semibold text-foreground mb-2">Welcome to MindCare</h3>
+              <p className="text-muted-foreground max-w-md mx-auto text-sm md:text-base px-4">
                 I'm here to support your mental wellness journey. Share what's on your mind, and let's work through it together.
               </p>
             </div>
@@ -135,23 +143,23 @@ const Chat = () => {
               key={message.id}
               className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <Card className={`max-w-[80%] p-4 ${
+              <Card className={`max-w-[85%] md:max-w-[80%] p-3 md:p-4 ${
                 message.sender === 'user' 
                   ? 'bg-primary text-primary-foreground' 
                   : 'bg-card border border-border'
               }`}>
-                <div className="flex items-start space-x-3">
-                  <div className="text-2xl">
+                <div className="flex items-start space-x-2 md:space-x-3">
+                  <div className="text-xl md:text-2xl flex-shrink-0">
                     {message.sender === 'user' ? '👤' : '🧠'}
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm leading-relaxed">{message.content}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs opacity-70">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm leading-relaxed break-words">{message.content}</p>
+                    <div className="flex items-center justify-between mt-2 gap-2">
+                      <span className="text-xs opacity-70 flex-shrink-0">
                         {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       {message.mood && message.sender === 'user' && (
-                        <Badge className={`text-xs ${getMoodColor(message.mood)}`}>
+                        <Badge className={`text-xs ${getMoodColor(message.mood)} flex-shrink-0`}>
                           {message.mood}
                         </Badge>
                       )}
@@ -164,9 +172,9 @@ const Chat = () => {
 
           {isTyping && (
             <div className="flex justify-start">
-              <Card className="max-w-[80%] p-4 bg-card border border-border">
-                <div className="flex items-center space-x-3">
-                  <div className="text-2xl">🧠</div>
+              <Card className="max-w-[85%] md:max-w-[80%] p-3 md:p-4 bg-card border border-border">
+                <div className="flex items-center space-x-2 md:space-x-3">
+                  <div className="text-xl md:text-2xl">🧠</div>
                   <div className="flex space-x-1">
                     <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
                     <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
@@ -196,12 +204,12 @@ const Chat = () => {
             <Button 
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground flex-shrink-0"
             >
               Send
             </Button>
           </div>
-          <div className="text-xs text-muted-foreground mt-2 text-center">
+          <div className="text-xs text-muted-foreground mt-2 text-center px-2">
             MindCare is here to support you. In crisis situations, please contact emergency services.
           </div>
         </div>
