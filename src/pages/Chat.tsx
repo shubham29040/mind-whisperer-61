@@ -5,7 +5,9 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useChat } from '@/hooks/useChat';
+import { useVoiceChat } from '@/hooks/useVoiceChat';
 import { useState } from 'react';
+import { Mic, MicOff, Volume2, VolumeX, Loader2, AlertCircle } from 'lucide-react';
 
 const Chat = () => {
   const [input, setInput] = useState('');
@@ -20,6 +22,28 @@ const Chat = () => {
     loadMessages,
     setCurrentConversationId
   } = useChat();
+  
+  // Voice chat functionality
+  const {
+    isListening,
+    isProcessing,
+    isSpeaking,
+    isMuted,
+    isSupported: isVoiceSupported,
+    transcript,
+    error: voiceError,
+    startListening,
+    stopListening,
+    toggleMute,
+    clearError,
+    handleAutoSpeak
+  } = useVoiceChat({
+    language: 'en-US',
+    autoSpeak: true,
+    speechRate: 0.9,
+    speechPitch: 1.0
+  });
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -29,6 +53,23 @@ const Chat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
+
+  // Auto-speak bot responses
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.sender === 'assistant' && !isMuted) {
+        handleAutoSpeak(lastMessage.content);
+      }
+    }
+  }, [messages, handleAutoSpeak, isMuted]);
+
+  // Handle voice transcript
+  useEffect(() => {
+    if (transcript && !isListening && !isProcessing) {
+      setInput(transcript);
+    }
+  }, [transcript, isListening, isProcessing]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -43,6 +84,30 @@ const Chat = () => {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleMicClick = () => {
+    if (voiceError) {
+      clearError();
+    }
+    
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
+  const getMicIcon = () => {
+    if (isListening) return <Mic className="h-4 w-4" />;
+    if (isProcessing) return <Loader2 className="h-4 w-4 animate-spin" />; 
+    return <MicOff className="h-4 w-4" />;
+  };
+
+  const getMicButtonClass = () => {
+    if (isListening) return "bg-red-500 hover:bg-red-600 text-white animate-pulse";
+    if (isProcessing) return "bg-yellow-500 hover:bg-yellow-600 text-white";
+    return "bg-secondary hover:bg-secondary/80 text-secondary-foreground";
   };
 
   const getMoodColor = (mood?: string) => {
@@ -192,25 +257,124 @@ const Chat = () => {
 
         {/* Input Area */}
         <div className="p-4 bg-card/50 backdrop-blur-sm">
+          {/* Voice Error Display */}
+          {voiceError && (
+            <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-4 w-4 text-red-500" />
+                <span className="text-xs text-red-600 dark:text-red-400">{voiceError}</span>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={clearError}
+                  className="h-auto p-1 text-red-600 hover:text-red-700"
+                >
+                  ×
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Voice Status Indicator */}
+          {(isListening || isProcessing || isSpeaking) && (
+            <div className="mb-3 flex items-center justify-center space-x-2 text-sm">
+              {isListening && (
+                <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                  🎤 Listening...
+                </Badge>
+              )}
+              {isProcessing && (
+                <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                  ⚡ Processing...
+                </Badge>
+              )}
+              {isSpeaking && (
+                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                  🔊 Speaking...
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* Transcript Preview */}
+          {transcript && (isListening || isProcessing) && (
+            <div className="mb-3 p-2 bg-muted/50 rounded-lg border border-border">
+              <div className="text-xs text-muted-foreground mb-1">Voice transcript:</div>
+              <div className="text-sm text-foreground italic">{transcript}</div>
+            </div>
+          )}
+
           <div className="flex space-x-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Share what's on your mind..."
+              placeholder={
+                isListening 
+                  ? "Listening... Speak now" 
+                  : isProcessing 
+                    ? "Processing your voice..." 
+                    : "Share what's on your mind or use voice..."
+              }
               className="flex-1 bg-background border-border focus:border-primary"
-              disabled={isLoading}
+              disabled={isLoading || isListening || isProcessing}
             />
+            
+            {/* Voice Controls */}
+            {isVoiceSupported && (
+              <>
+                {/* Microphone Button */}
+                <Button
+                  onClick={handleMicClick}
+                  disabled={isLoading || isSpeaking}
+                  className={`flex-shrink-0 ${getMicButtonClass()}`}
+                  title={
+                    isListening 
+                      ? "Stop listening" 
+                      : isProcessing 
+                        ? "Processing..." 
+                        : "Start voice input"
+                  }
+                >
+                  {getMicIcon()}
+                </Button>
+
+                {/* Mute Toggle */}
+                <Button
+                  onClick={toggleMute}
+                  variant="outline"
+                  size="default"
+                  className="flex-shrink-0"
+                  title={isMuted ? "Enable voice responses" : "Mute voice responses"}
+                >
+                  {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                </Button>
+              </>
+            )}
+
             <Button 
               onClick={handleSend}
-              disabled={!input.trim() || isLoading}
+              disabled={!input.trim() || isLoading || isListening || isProcessing}
               className="bg-primary hover:bg-primary/90 text-primary-foreground flex-shrink-0"
             >
               Send
             </Button>
           </div>
+
           <div className="text-xs text-muted-foreground mt-2 text-center px-2">
-            MindCare is here to support you. In crisis situations, please contact emergency services.
+            {!isVoiceSupported ? (
+              <span className="text-orange-600 dark:text-orange-400">
+                ⚠️ Voice features not supported in this browser. Try using Chrome, Safari, or Edge.
+              </span>
+            ) : (
+              <>
+                MindCare is here to support you. 
+                {isSpeaking && " 🔊 Bot is speaking..."}
+                {isListening && " 🎤 Listening for your voice..."}
+                <br />
+                In crisis situations, please contact emergency services.
+              </>
+            )}
           </div>
         </div>
       </div>
