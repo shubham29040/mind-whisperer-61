@@ -23,7 +23,7 @@ const Chat = () => {
     setCurrentConversationId
   } = useChat();
   
-  // Voice chat functionality
+  // Voice chat functionality with Indian language support
   const {
     isListening,
     isProcessing,
@@ -38,10 +38,10 @@ const Chat = () => {
     clearError,
     handleAutoSpeak
   } = useVoiceChat({
-    language: 'en-US',
+    language: 'en-IN', // Indian English
     autoSpeak: true,
-    speechRate: 0.9,
-    speechPitch: 1.0
+    speechRate: 0.85,
+    speechPitch: 0.9
   });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);

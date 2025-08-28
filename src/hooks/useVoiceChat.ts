@@ -234,51 +234,96 @@ export const useVoiceChat = (config: VoiceChatConfig = {}) => {
     setState(prev => ({ ...prev, isListening: false, isProcessing: false }));
   }, []);
 
-  // Speak text
+  // Track last spoken text to prevent repetition
+  const lastSpokenTextRef = useRef<string>('');
+  const speakTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Speak text with Indian voice preference and repetition prevention
   const speak = useCallback((text: string) => {
     if (!state.isSupported || state.isMuted || !text.trim()) return;
+
+    // Prevent speaking the same text repeatedly
+    if (lastSpokenTextRef.current === text.trim()) {
+      console.log('Skipping repeated text:', text);
+      return;
+    }
+
+    // Clear any pending speak timeout
+    if (speakTimeoutRef.current) {
+      clearTimeout(speakTimeoutRef.current);
+      speakTimeoutRef.current = null;
+    }
 
     // Cancel any ongoing speech
     window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = speechRate;
-    utterance.pitch = speechPitch;
-    utterance.volume = 1;
-
-    // Try to use Hindi voice if language contains 'hi'
-    if (language.includes('hi')) {
-      const voices = window.speechSynthesis.getVoices();
-      const hindiVoice = voices.find(voice => 
-        voice.lang.includes('hi') || voice.name.includes('Hindi')
-      );
-      if (hindiVoice) {
-        utterance.voice = hindiVoice;
-      }
-    }
-
-    utterance.onstart = () => {
-      setState(prev => ({ ...prev, isSpeaking: true }));
-    };
-
-    utterance.onend = () => {
-      setState(prev => ({ ...prev, isSpeaking: false }));
+    // Wait a bit for speech synthesis to be ready
+    speakTimeoutRef.current = setTimeout(() => {
+      const utterance = new SpeechSynthesisUtterance(text);
       
-      // Auto restart listening in continuous mode
-      if (continuousMode && !state.isListening) {
-        timeoutRef.current = setTimeout(() => {
-          startListening();
-        }, 1000);
+      // More natural speech settings for Indian context
+      utterance.rate = 0.85; // Slightly slower for clarity
+      utterance.pitch = 0.9; // Slightly lower pitch for natural sound
+      utterance.volume = 0.9;
+
+      // Get available voices and prefer Indian/Hindi voices
+      const voices = window.speechSynthesis.getVoices();
+      console.log('Available voices:', voices.map(v => ({ name: v.name, lang: v.lang })));
+
+      // Prioritize Indian English and Hindi voices
+      const preferredVoice = voices.find(voice => 
+        voice.lang.includes('en-IN') || // Indian English
+        voice.name.toLowerCase().includes('indian') ||
+        voice.name.toLowerCase().includes('ravi') || // Common Indian voice names
+        voice.name.toLowerCase().includes('veena') ||
+        voice.lang.includes('hi-IN') || // Hindi India
+        voice.lang.includes('hi') // General Hindi
+      );
+
+      // Fallback to other natural voices
+      const fallbackVoice = voices.find(voice => 
+        voice.name.toLowerCase().includes('natural') ||
+        voice.name.toLowerCase().includes('enhanced') ||
+        voice.name.toLowerCase().includes('premium') ||
+        (voice.lang.includes('en') && voice.localService) // Local English voices
+      );
+
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+        console.log('Using preferred voice:', preferredVoice.name, preferredVoice.lang);
+      } else if (fallbackVoice) {
+        utterance.voice = fallbackVoice;
+        console.log('Using fallback voice:', fallbackVoice.name, fallbackVoice.lang);
       }
-    };
 
-    utterance.onerror = () => {
-      setState(prev => ({ ...prev, isSpeaking: false }));
-    };
+      utterance.onstart = () => {
+        setState(prev => ({ ...prev, isSpeaking: true }));
+        lastSpokenTextRef.current = text.trim();
+        console.log('Started speaking:', text.substring(0, 50) + '...');
+      };
 
-    synthRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
-  }, [state.isSupported, state.isMuted, state.isListening, speechRate, speechPitch, language, continuousMode, startListening]);
+      utterance.onend = () => {
+        setState(prev => ({ ...prev, isSpeaking: false }));
+        console.log('Finished speaking');
+        
+        // Auto restart listening in continuous mode
+        if (continuousMode && !state.isListening) {
+          timeoutRef.current = setTimeout(() => {
+            startListening();
+          }, 1500);
+        }
+      };
+
+      utterance.onerror = (error) => {
+        console.error('Speech synthesis error:', error);
+        setState(prev => ({ ...prev, isSpeaking: false }));
+      };
+
+      synthRef.current = utterance;
+      window.speechSynthesis.speak(utterance);
+    }, 100); // Small delay to ensure speech synthesis is ready
+
+  }, [state.isSupported, state.isMuted, state.isListening, continuousMode, startListening]);
 
   // Stop speaking
   const stopSpeaking = useCallback(() => {
@@ -301,6 +346,23 @@ export const useVoiceChat = (config: VoiceChatConfig = {}) => {
 
   // Cleanup on unmount
   useEffect(() => {
+    // Initialize voices when component mounts
+    const initializeVoices = () => {
+      if ('speechSynthesis' in window) {
+        // Load voices if not already loaded
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length === 0) {
+          // Wait for voices to load
+          window.speechSynthesis.addEventListener('voiceschanged', () => {
+            const loadedVoices = window.speechSynthesis.getVoices();
+            console.log('Voices loaded:', loadedVoices.length);
+          });
+        }
+      }
+    };
+
+    initializeVoices();
+
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
@@ -310,6 +372,9 @@ export const useVoiceChat = (config: VoiceChatConfig = {}) => {
       }
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+      }
+      if (speakTimeoutRef.current) {
+        clearTimeout(speakTimeoutRef.current);
       }
     };
   }, []);
