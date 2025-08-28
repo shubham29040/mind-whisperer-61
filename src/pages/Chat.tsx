@@ -279,9 +279,7 @@ const Chat = () => {
             {/* Voice Controls */}
             {isVoiceSupported && <>
                 {/* Microphone Button */}
-                <Button onClick={handleMicClick} disabled={isLoading || isSpeaking} className={`flex-shrink-0 ${getMicButtonClass()}`} title={isListening ? "Stop listening" : isProcessing ? "Processing..." : "Start voice input"}>
-                  {getMicIcon()}
-                </Button>
+                
 
                 {/* Mute Toggle */}
                 <Button onClick={toggleMute} variant="outline" size="default" className="flex-shrink-0" title={isMuted ? "Enable voice responses" : "Mute voice responses"}>
