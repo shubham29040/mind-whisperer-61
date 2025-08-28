@@ -180,9 +180,7 @@ const Chat = () => {
               <Button size="sm" onClick={handleNewConversation} className="lg:hidden bg-primary hover:bg-primary/90">
                 New
               </Button>
-              <Badge variant="secondary" className="bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200">
-                {selectedVoice ? `👩‍🎤 ${selectedVoice.includes('Hindi') || selectedVoice.includes('hi') ? 'Hindi' : 'Female'} Voice` : '👩‍🎤 Female AI'}
-              </Badge>
+              
             </div>
           </div>
         </div>
