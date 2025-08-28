@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useChat } from '@/hooks/useChat';
-import { useVoiceChat } from '@/hooks/useVoiceChat';
+import { useEnhancedVoiceChat } from '@/hooks/useEnhancedVoiceChat';
 import { useState } from 'react';
 import { Mic, MicOff, Volume2, VolumeX, Loader2, AlertCircle } from 'lucide-react';
 
@@ -23,7 +23,7 @@ const Chat = () => {
     setCurrentConversationId
   } = useChat();
   
-  // Voice chat functionality with Indian language support
+  // Ultra-realistic voice with enhanced Indian voices
   const {
     isListening,
     isProcessing,
@@ -32,16 +32,18 @@ const Chat = () => {
     isSupported: isVoiceSupported,
     transcript,
     error: voiceError,
+    selectedVoice,
     startListening,
     stopListening,
     toggleMute,
     clearError,
     handleAutoSpeak
-  } = useVoiceChat({
+  } = useEnhancedVoiceChat({
     language: 'en-IN', // Indian English
     autoSpeak: true,
-    speechRate: 0.85,
-    speechPitch: 0.9
+    speechRate: 0.75,   // Ultra-natural speed
+    speechPitch: 0.8,   // Warm, natural pitch
+    volume: 1.0         // Full volume for clarity
   });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -185,7 +187,7 @@ const Chat = () => {
                 New
               </Button>
               <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                🟢 Online
+                {selectedVoice ? `🎙️ ${selectedVoice.split(' ')[0]}` : '🟢 Enhanced Voice'}
               </Badge>
             </div>
           </div>
@@ -368,11 +370,11 @@ const Chat = () => {
               </span>
             ) : (
               <>
-                MindCare is here to support you. 
-                {isSpeaking && " 🔊 Bot is speaking..."}
-                {isListening && " 🎤 Listening for your voice..."}
+                Ultra-realistic Indian voice AI support ready. 
+                {isSpeaking && " 🔊 Natural voice speaking..."}
+                {isListening && " 🎤 HD listening active..."}
                 <br />
-                In crisis situations, please contact emergency services.
+                Emergency: Contact local services immediately.
               </>
             )}
           </div>
