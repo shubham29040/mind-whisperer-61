@@ -71,6 +71,7 @@ interface EnhancedVoiceChatConfig {
   speechRate?: number;
   speechPitch?: number;
   volume?: number;
+  onAutoSend?: (transcript: string) => void;
 }
 
 interface EnhancedVoiceChatState {
@@ -86,12 +87,13 @@ interface EnhancedVoiceChatState {
 
 export const useEnhancedVoiceChat = (config: EnhancedVoiceChatConfig = {}) => {
   const {
-    language = 'en-IN',
+    language = 'hi-IN', // Hindi India for better Hindi support
     continuousMode = false,
     autoSpeak = true,
-    speechRate = 0.75,
-    speechPitch = 0.8,
-    volume = 1.0
+    speechRate = 0.7,  // Slightly slower for Hindi clarity
+    speechPitch = 0.9, // Higher pitch for female voice
+    volume = 1.0,
+    onAutoSend
   } = config;
 
   // State management
@@ -115,35 +117,63 @@ export const useEnhancedVoiceChat = (config: EnhancedVoiceChatConfig = {}) => {
   const lastSpokenTextRef = useRef<string>('');
   const speakTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Enhanced voice selection for realistic Indian voices
+  // Enhanced female Hindi voice selection
   const selectBestVoice = useCallback((): SpeechSynthesisVoice | null => {
     const voices = window.speechSynthesis.getVoices();
+    console.log('All available voices:', voices.map(v => ({ name: v.name, lang: v.lang, gender: v.name })));
     
-    // Priority 1: High-quality Indian English voices
-    const premiumIndianVoices = voices.filter(voice => 
-      (voice.lang.includes('en-IN') || voice.name.toLowerCase().includes('indian')) &&
-      (voice.name.toLowerCase().includes('premium') ||
-       voice.name.toLowerCase().includes('enhanced') ||
-       voice.name.toLowerCase().includes('neural') ||
-       voice.name.toLowerCase().includes('wavenet') ||
-       voice.localService)
+    // Priority 1: Female Hindi voices
+    const femaleHindiVoices = voices.filter(voice => 
+      (voice.lang.includes('hi-IN') || voice.lang.includes('hi')) &&
+      (voice.name.toLowerCase().includes('female') ||
+       voice.name.toLowerCase().includes('woman') ||
+       voice.name.toLowerCase().includes('veena') ||
+       voice.name.toLowerCase().includes('priya') ||
+       voice.name.toLowerCase().includes('aditi') ||
+       voice.name.toLowerCase().includes('rashika') ||
+       voice.name.toLowerCase().includes('kiran') ||
+       voice.name.toLowerCase().includes('kavya') ||
+       voice.name.toLowerCase().includes('shreya'))
     );
 
-    if (premiumIndianVoices.length > 0) {
-      console.log('Selected premium Indian voice:', premiumIndianVoices[0].name);
-      return premiumIndianVoices[0];
+    if (femaleHindiVoices.length > 0) {
+      console.log('Selected female Hindi voice:', femaleHindiVoices[0].name);
+      return femaleHindiVoices[0];
     }
 
-    // Priority 2: Standard Indian English voices
+    // Priority 2: Any Hindi voices
+    const hindiVoices = voices.filter(voice => 
+      voice.lang.includes('hi-IN') || voice.lang.includes('hi')
+    );
+
+    if (hindiVoices.length > 0) {
+      console.log('Selected Hindi voice:', hindiVoices[0].name);
+      return hindiVoices[0];
+    }
+
+    // Priority 3: Female Indian English voices
+    const femaleIndianVoices = voices.filter(voice => 
+      (voice.lang.includes('en-IN') || voice.name.toLowerCase().includes('indian')) &&
+      (voice.name.toLowerCase().includes('female') ||
+       voice.name.toLowerCase().includes('woman') ||
+       voice.name.toLowerCase().includes('veena') ||
+       voice.name.toLowerCase().includes('priya') ||
+       voice.name.toLowerCase().includes('aditi') ||
+       voice.name.toLowerCase().includes('kendra') ||
+       voice.name.toLowerCase().includes('joanna') ||
+       voice.name.toLowerCase().includes('neural') ||
+       voice.name.toLowerCase().includes('premium'))
+    );
+
+    if (femaleIndianVoices.length > 0) {
+      console.log('Selected female Indian English voice:', femaleIndianVoices[0].name);
+      return femaleIndianVoices[0];
+    }
+
+    // Priority 4: Any Indian voice
     const indianVoices = voices.filter(voice => 
       voice.lang.includes('en-IN') || 
-      voice.name.toLowerCase().includes('indian') ||
-      voice.name.toLowerCase().includes('ravi') ||
-      voice.name.toLowerCase().includes('veena') ||
-      voice.name.toLowerCase().includes('aditi') ||
-      voice.name.toLowerCase().includes('priya') ||
-      voice.name.toLowerCase().includes('kendra') ||
-      voice.name.toLowerCase().includes('joanna')
+      voice.name.toLowerCase().includes('indian')
     );
 
     if (indianVoices.length > 0) {
@@ -151,32 +181,36 @@ export const useEnhancedVoiceChat = (config: EnhancedVoiceChatConfig = {}) => {
       return indianVoices[0];
     }
 
-    // Priority 3: High-quality English voices
-    const premiumEnglishVoices = voices.filter(voice => 
+    // Priority 5: Female English voices
+    const femaleEnglishVoices = voices.filter(voice => 
       voice.lang.includes('en') &&
-      (voice.name.toLowerCase().includes('premium') ||
-       voice.name.toLowerCase().includes('enhanced') ||
-       voice.name.toLowerCase().includes('neural') ||
-       voice.name.toLowerCase().includes('natural') ||
-       voice.localService)
+      (voice.name.toLowerCase().includes('female') ||
+       voice.name.toLowerCase().includes('woman') ||
+       voice.name.toLowerCase().includes('samantha') ||
+       voice.name.toLowerCase().includes('victoria') ||
+       voice.name.toLowerCase().includes('susan') ||
+       voice.name.toLowerCase().includes('karen') ||
+       voice.name.toLowerCase().includes('moira'))
     );
 
-    if (premiumEnglishVoices.length > 0) {
-      console.log('Selected premium English voice:', premiumEnglishVoices[0].name);
-      return premiumEnglishVoices[0];
+    if (femaleEnglishVoices.length > 0) {
+      console.log('Selected female English voice:', femaleEnglishVoices[0].name);
+      return femaleEnglishVoices[0];
     }
 
-    // Priority 4: Any good English voice
-    const englishVoices = voices.filter(voice => 
-      voice.lang.includes('en') && !voice.name.toLowerCase().includes('google')
+    // Fallback: Any decent voice
+    const decentVoices = voices.filter(voice => 
+      voice.lang.includes('en') && 
+      !voice.name.toLowerCase().includes('google') &&
+      voice.localService
     );
 
-    if (englishVoices.length > 0) {
-      console.log('Selected English voice:', englishVoices[0].name);
-      return englishVoices[0];
+    if (decentVoices.length > 0) {
+      console.log('Selected fallback voice:', decentVoices[0].name);
+      return decentVoices[0];
     }
 
-    return null;
+    return voices.length > 0 ? voices[0] : null;
   }, []);
 
   // Initialize speech recognition
@@ -186,7 +220,7 @@ export const useEnhancedVoiceChat = (config: EnhancedVoiceChatConfig = {}) => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
 
-    recognition.continuous = true;
+    recognition.continuous = false; // Changed to false for auto-send
     recognition.interimResults = true;
     recognition.lang = language;
     recognition.maxAlternatives = 1;
@@ -215,8 +249,14 @@ export const useEnhancedVoiceChat = (config: EnhancedVoiceChatConfig = {}) => {
         isProcessing: !!finalTranscript
       }));
 
-      // Auto-stop after final result
-      if (finalTranscript && !continuousMode) {
+      // Auto-send when final transcript is received
+      if (finalTranscript && finalTranscript.trim()) {
+        console.log('Auto-sending transcript:', finalTranscript);
+        setTimeout(() => {
+          if (onAutoSend) {
+            onAutoSend(finalTranscript);
+          }
+        }, 500); // Small delay to ensure UI updates
         recognition.stop();
       }
     };
@@ -237,6 +277,9 @@ export const useEnhancedVoiceChat = (config: EnhancedVoiceChatConfig = {}) => {
         case 'network':
           errorMessage = 'नेटवर्क की समस्या। कनेक्शन चेक करें।';
           break;
+        case 'aborted':
+          // Don't show error for manual stops
+          return;
         default:
           errorMessage = `Voice error: ${event.error}`;
       }

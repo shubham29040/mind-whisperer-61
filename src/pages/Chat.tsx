@@ -23,7 +23,7 @@ const Chat = () => {
     setCurrentConversationId
   } = useChat();
   
-  // Ultra-realistic voice with enhanced Indian voices
+  // Ultra-realistic female Hindi voice with auto-send
   const {
     isListening,
     isProcessing,
@@ -39,11 +39,20 @@ const Chat = () => {
     clearError,
     handleAutoSpeak
   } = useEnhancedVoiceChat({
-    language: 'en-IN', // Indian English
+    language: 'hi-IN', // Hindi India for clear Hindi
     autoSpeak: true,
-    speechRate: 0.75,   // Ultra-natural speed
-    speechPitch: 0.8,   // Warm, natural pitch
-    volume: 1.0         // Full volume for clarity
+    speechRate: 0.7,    // Perfect for Hindi clarity
+    speechPitch: 0.9,   // Higher pitch for female voice
+    volume: 1.0,        // Clear volume
+    onAutoSend: (transcript: string) => {
+      // Auto-send when voice input completes
+      setInput(transcript);
+      setTimeout(() => {
+        if (transcript.trim()) {
+          handleSend();
+        }
+      }, 100);
+    }
   });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -66,19 +75,28 @@ const Chat = () => {
     }
   }, [messages, handleAutoSpeak, isMuted]);
 
-  // Handle voice transcript
+  // Handle voice transcript - removed auto-set since we have auto-send now
   useEffect(() => {
-    if (transcript && !isListening && !isProcessing) {
+    // Only set input if not auto-sending (for preview during listening)
+    if (transcript && isListening) {
       setInput(transcript);
     }
-  }, [transcript, isListening, isProcessing]);
+  }, [transcript, isListening]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
     
     const messageText = input;
     setInput('');
-    await sendMessage(messageText);
+    
+    try {
+      await sendMessage(messageText);
+      console.log('Message sent and saved:', messageText);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      // Restore input on error
+      setInput(messageText);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -186,8 +204,8 @@ const Chat = () => {
               >
                 New
               </Button>
-              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                {selectedVoice ? `🎙️ ${selectedVoice.split(' ')[0]}` : '🟢 Enhanced Voice'}
+              <Badge variant="secondary" className="bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200">
+                {selectedVoice ? `👩‍🎤 ${selectedVoice.includes('Hindi') || selectedVoice.includes('hi') ? 'Hindi' : 'Female'} Voice` : '👩‍🎤 Female AI'}
               </Badge>
             </div>
           </div>
@@ -313,10 +331,10 @@ const Chat = () => {
               onKeyPress={handleKeyPress}
               placeholder={
                 isListening 
-                  ? "Listening... Speak now" 
+                  ? "बोलिए... सुन रही हूँ (Speak... I'm listening)" 
                   : isProcessing 
-                    ? "Processing your voice..." 
-                    : "Share what's on your mind or use voice..."
+                    ? "आपकी बात समझ रही हूँ... (Understanding your words...)" 
+                    : "अपनी बात कहें या आवाज़ का इस्तेमाल करें... (Share your thoughts or use voice...)"
               }
               className="flex-1 bg-background border-border focus:border-primary"
               disabled={isLoading || isListening || isProcessing}
@@ -370,11 +388,11 @@ const Chat = () => {
               </span>
             ) : (
               <>
-                Ultra-realistic Indian voice AI support ready. 
-                {isSpeaking && " 🔊 Natural voice speaking..."}
-                {isListening && " 🎤 HD listening active..."}
+                Female Hindi AI voice ready - Auto-sends after speech. 
+                {isSpeaking && " 🔊 महिला आवाज़ बोल रही है..."}
+                {isListening && " 🎤 सुन रही हूँ..."}
                 <br />
-                Emergency: Contact local services immediately.
+                आपातकाल में तुरंत स्थानीय सेवाओं से संपर्क करें।
               </>
             )}
           </div>
