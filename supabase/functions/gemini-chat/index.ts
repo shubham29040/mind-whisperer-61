@@ -29,7 +29,20 @@ serve(async (req) => {
 
     console.log('Received request:', { message, conversationId, userId });
 
-    // Mental health focused system prompt
+    // Detect user's language from message
+    const detectLanguage = (text: string): string => {
+      // Hindi/Hinglish patterns
+      if (/[अ-ह]/.test(text) || 
+          /(hai|hain|nahi|kya|kaise|mein|main|kar|ke|ka|ki|ko|se|par|aur|ya|phir|ab|jo|wo|koi|kuch|yah|is|us|mere|mujhe|tumhe|apko|hum|tum|aap)/i.test(text)) {
+        return 'hindi';
+      }
+      // Add other language detection patterns as needed
+      return 'english';
+    };
+
+    const userLanguage = detectLanguage(message);
+
+    // Mental health focused system prompt with language-aware instructions
     const systemPrompt = `You are MindCare, a compassionate AI mental health companion. Your role is to:
 
 1. Provide emotional support and validation
@@ -43,11 +56,13 @@ IMPORTANT GUIDELINES:
 - Always prioritize user safety
 - If user mentions self-harm or suicide, immediately encourage contacting emergency services or crisis helplines
 - You are a support tool, not a replacement for professional therapy
-- Keep responses concise but meaningful
+- KEEP RESPONSES SHORT AND CONCISE (maximum 2-3 sentences)
 - Focus only on mental health, wellness, and emotional support topics
 - If asked about other topics, gently redirect to mental health discussion
+- RESPOND IN THE SAME LANGUAGE AS THE USER: ${userLanguage === 'hindi' ? 'Respond in Hindi/Hinglish' : 'Respond in English'}
+- Be helpful and direct with practical advice
 
-Detect the user's emotional state and respond appropriately with empathy and practical support.`;
+Detect the user's emotional state and respond appropriately with empathy and practical support. Keep it brief but meaningful.`;
 
     // Detect mood from message
     const detectMood = (text: string): string => {
@@ -95,7 +110,7 @@ Detect the user's emotional state and respond appropriately with empathy and pra
           temperature: 0.7,
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: 1024,
+          maxOutputTokens: 200, // Reduced for shorter responses
         },
         safetySettings: [
           {
