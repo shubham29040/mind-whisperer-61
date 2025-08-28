@@ -11,6 +11,7 @@ import { useMoodTracker } from '@/hooks/useMoodTracker';
 import { MoodAvatar } from '@/components/MoodAvatar';
 import { NotificationCenter } from '@/components/NotificationCenter';
 import { supabase } from '@/integrations/supabase/client';
+
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { currentMood, moodEntries } = useMoodTracker();
@@ -27,6 +28,13 @@ const Profile = () => {
     { label: 'Weekly Summary', enabled: true, key: 'weekly_summary' }
   ]);
 
+  const achievements = [
+    { title: '7-Day Streak', description: 'Tracked mood for 7 consecutive days', icon: '🔥', earned: true },
+    { title: 'First Steps', description: 'Completed your first wellness chat', icon: '👣', earned: true },
+    { title: 'Mindful Moments', description: 'Used 10 breathing exercises', icon: '🧘', earned: false },
+    { title: 'Mood Master', description: 'Tracked mood for 30 days', icon: '📊', earned: false }
+  ];
+
   // Load user profile data
   useEffect(() => {
     if (user) {
@@ -42,9 +50,9 @@ const Profile = () => {
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // Not found error
+      if (error) {
         console.error('Error loading profile:', error);
         return;
       }
@@ -89,41 +97,9 @@ const Profile = () => {
       )
     );
   };
-  const achievements = [{
-    title: '7-Day Streak',
-    description: 'Tracked mood for 7 consecutive days',
-    icon: '🔥',
-    earned: true
-  }, {
-    title: 'First Steps',
-    description: 'Completed your first wellness chat',
-    icon: '👣',
-    earned: true
-  }, {
-    title: 'Mindful Moments',
-    description: 'Used 10 breathing exercises',
-    icon: '🧘',
-    earned: false
-  }, {
-    title: 'Mood Master',
-    description: 'Tracked mood for 30 days',
-    icon: '📊',
-    earned: false
-  }];
-  const preferences = [{
-    label: 'Daily Mood Reminders',
-    enabled: true
-  }, {
-    label: 'Wellness Tips',
-    enabled: true
-  }, {
-    label: 'Achievement Notifications',
-    enabled: false
-  }, {
-    label: 'Weekly Summary',
-    enabled: true
-  }];
-  return <div className="min-h-screen bg-gradient-calm p-6">
+
+  return (
+    <div className="min-h-screen bg-gradient-calm p-6">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -282,22 +258,26 @@ const Profile = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {achievements.map((achievement, index) => <div key={index} className={`p-3 rounded-lg border transition-gentle ${achievement.earned ? 'bg-gradient-wellness/10 border-primary/20' : 'bg-muted/30 border-border/50 opacity-60'}`}>
+                  {achievements.map((achievement, index) => (
+                    <div key={index} className={`p-3 rounded-lg border transition-gentle ${achievement.earned ? 'bg-gradient-wellness/10 border-primary/20' : 'bg-muted/30 border-border/50 opacity-60'}`}>
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{achievement.icon}</span>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium text-sm">{achievement.title}</h4>
-                            {achievement.earned && <Badge variant="secondary" className="text-xs">
+                            {achievement.earned && (
+                              <Badge variant="secondary" className="text-xs">
                                 Earned
-                              </Badge>}
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-xs text-muted-foreground">
                             {achievement.description}
                           </p>
                         </div>
                       </div>
-                    </div>)}
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -306,7 +286,7 @@ const Profile = () => {
             <Card className="bg-card/80 backdrop-blur-sm border-border/50">
               <CardContent className="pt-6">
                 <div className="space-y-3">
-                  <Button variant="outline" className="w-full justify-start gap-2" disabled={userData.isGuest}>
+                  <Button variant="outline" className="w-full justify-start gap-2" disabled={!user}>
                     <Shield className="h-4 w-4" />
                     Privacy Settings
                   </Button>
@@ -347,6 +327,8 @@ const Profile = () => {
           </CardContent>
         </Card>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Profile;
