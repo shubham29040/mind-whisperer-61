@@ -1,34 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
-import { Calendar, TrendingUp, Smile, Heart } from 'lucide-react';
+import { Calendar, TrendingUp, Smile, Heart, RefreshCw, MessageCircle } from 'lucide-react';
+import { useRealtimeMoodAnalytics } from '@/hooks/useRealtimeMoodAnalytics';
+import { useRealtimeStats } from '@/hooks/useRealtimeStats';
 
 const MoodTracker = () => {
-  // Sample mood data - in a real app, this would come from your database
-  const weeklyMoodData = [
-    { day: 'Mon', mood: 7, date: '2024-01-15' },
-    { day: 'Tue', mood: 5, date: '2024-01-16' },
-    { day: 'Wed', mood: 8, date: '2024-01-17' },
-    { day: 'Thu', mood: 6, date: '2024-01-18' },
-    { day: 'Fri', mood: 9, date: '2024-01-19' },
-    { day: 'Sat', mood: 7, date: '2024-01-20' },
-    { day: 'Sun', mood: 8, date: '2024-01-21' },
-  ];
-
-  const moodDistribution = [
-    { mood: 'Happy', count: 12, color: '#22c55e' },
-    { mood: 'Neutral', count: 8, color: '#64748b' },
-    { mood: 'Anxious', count: 5, color: '#f59e0b' },
-    { mood: 'Sad', count: 3, color: '#3b82f6' },
-    { mood: 'Angry', count: 2, color: '#ef4444' },
-  ];
-
-  const recentEntries = [
-    { date: '2024-01-21', mood: 'Happy', score: 8, note: 'Had a great conversation with the AI companion about mindfulness techniques.' },
-    { date: '2024-01-20', mood: 'Neutral', score: 7, note: 'Feeling balanced today. The breathing exercises helped.' },
-    { date: '2024-01-19', mood: 'Happy', score: 9, note: 'Wonderful day! Music recommendations were perfect.' },
-    { date: '2024-01-18', mood: 'Anxious', score: 6, note: 'Work stress, but the AI provided helpful coping strategies.' },
-  ];
+  const { analytics, refreshAnalytics } = useRealtimeMoodAnalytics();
+  const { stats } = useRealtimeStats();
 
   const getMoodColor = (mood: string) => {
     const colors = {
@@ -37,22 +17,35 @@ const MoodTracker = () => {
       Anxious: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       Sad: 'bg-blue-100 text-blue-800 border-blue-200',
       Angry: 'bg-red-100 text-red-800 border-red-200',
+      Calm: 'bg-blue-100 text-blue-800 border-blue-200',
+      Excited: 'bg-orange-100 text-orange-800 border-orange-200'
     };
     return colors[mood as keyof typeof colors] || colors.Neutral;
   };
-
-  const averageMood = weeklyMoodData.reduce((sum, day) => sum + day.mood, 0) / weeklyMoodData.length;
 
   return (
     <div className="min-h-screen bg-gradient-calm p-6">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 bg-gradient-wellness bg-clip-text text-transparent">
-            Your Mood Journey
-          </h1>
-          <p className="text-muted-foreground">
-            Track your emotional wellness over time and discover patterns in your mental health.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2 bg-gradient-wellness bg-clip-text text-transparent">
+                Real-time Mood Analytics
+              </h1>
+              <p className="text-muted-foreground">
+                Track your emotional wellness in real-time based on your chat conversations.
+              </p>
+            </div>
+            <Button 
+              onClick={refreshAnalytics}
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Stats Overview */}
@@ -65,7 +58,7 @@ const MoodTracker = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Avg Mood</p>
-                  <p className="text-2xl font-bold">{averageMood.toFixed(1)}/10</p>
+                  <p className="text-2xl font-bold">{analytics.insights.averageMood}/10</p>
                 </div>
               </div>
             </CardContent>
@@ -79,7 +72,7 @@ const MoodTracker = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Days Tracked</p>
-                  <p className="text-2xl font-bold">30</p>
+                  <p className="text-2xl font-bold">{analytics.insights.totalDays}</p>
                 </div>
               </div>
             </CardContent>
@@ -93,7 +86,7 @@ const MoodTracker = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Best Day</p>
-                  <p className="text-2xl font-bold">Friday</p>
+                  <p className="text-2xl font-bold">{analytics.insights.bestDay}</p>
                 </div>
               </div>
             </CardContent>
@@ -107,7 +100,7 @@ const MoodTracker = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Streak</p>
-                  <p className="text-2xl font-bold">7 days</p>
+                  <p className="text-2xl font-bold">{analytics.insights.streak} days</p>
                 </div>
               </div>
             </CardContent>
@@ -120,12 +113,12 @@ const MoodTracker = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Weekly Mood Trend
+                Real-time Weekly Mood Trend
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={weeklyMoodData}>
+                <LineChart data={analytics.weeklyTrend}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
                   <YAxis domain={[0, 10]} stroke="hsl(var(--muted-foreground))" />
@@ -146,6 +139,9 @@ const MoodTracker = () => {
                   />
                 </LineChart>
               </ResponsiveContainer>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Based on real-time analysis of your chat messages
+              </p>
             </CardContent>
           </Card>
 
@@ -154,14 +150,14 @@ const MoodTracker = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Smile className="h-5 w-5" />
-                Mood Distribution
+                Live Mood Distribution
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={moodDistribution}
+                    data={analytics.moodDistribution}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -169,7 +165,7 @@ const MoodTracker = () => {
                     paddingAngle={5}
                     dataKey="count"
                   >
-                    {moodDistribution.map((entry, index) => (
+                    {analytics.moodDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -183,7 +179,7 @@ const MoodTracker = () => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex flex-wrap gap-2 mt-4">
-                {moodDistribution.map((item, index) => (
+                {analytics.moodDistribution.map((item, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <div 
                       className="w-3 h-3 rounded-full" 
@@ -195,6 +191,9 @@ const MoodTracker = () => {
                   </div>
                 ))}
               </div>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Updates automatically from your conversations
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -203,18 +202,18 @@ const MoodTracker = () => {
         <Card className="bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Recent Mood Entries
+              <MessageCircle className="h-5 w-5" />
+              Recent Chat-Based Mood Analysis
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentEntries.map((entry, index) => (
+              {analytics.moodHistory.slice(-4).reverse().map((entry, index) => (
                 <div key={index} className="p-4 border border-border/50 rounded-lg bg-background/50">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
-                      <Badge className={getMoodColor(entry.mood)}>
-                        {entry.mood}
+                      <Badge className={getMoodColor(entry.mood.charAt(0).toUpperCase() + entry.mood.slice(1))}>
+                        {entry.mood.charAt(0).toUpperCase() + entry.mood.slice(1)}
                       </Badge>
                       <span className="text-sm text-muted-foreground">{entry.date}</span>
                     </div>
@@ -222,9 +221,19 @@ const MoodTracker = () => {
                       {entry.score}/10
                     </div>
                   </div>
-                  <p className="text-sm text-foreground">{entry.note}</p>
+                  <p className="text-sm text-foreground">
+                    Analyzed from {entry.messages} chat messages - showing emotional patterns detected in your conversations.
+                  </p>
                 </div>
               ))}
+              {analytics.moodHistory.length === 0 && (
+                <div className="text-center py-8">
+                  <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Start chatting to see your mood analysis here!
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -233,13 +242,24 @@ const MoodTracker = () => {
         <div className="mt-8">
           <Card className="bg-gradient-focus/10 border-primary/20">
             <CardContent className="p-6 text-center">
-              <h3 className="text-lg font-semibold mb-2">Ready to continue your wellness journey?</h3>
+              <h3 className="text-lg font-semibold mb-2">Keep your wellness journey active!</h3>
               <p className="text-muted-foreground mb-4">
-                Chat with our AI companion to add today's mood entry and receive personalized support.
+                Chat with our AI companion to continue real-time mood tracking and receive personalized support.
               </p>
-              <button className="bg-gradient-wellness text-primary-foreground px-6 py-2 rounded-lg hover:shadow-glow transition-gentle">
-                Start New Chat
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button 
+                  className="bg-gradient-wellness text-primary-foreground hover:shadow-glow transition-gentle"
+                  onClick={() => window.location.href = '/chat'}
+                >
+                  Start New Chat
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={refreshAnalytics}
+                >
+                  Refresh Analytics
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

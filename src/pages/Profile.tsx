@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { User, Settings, Shield, Bell, Heart, Award, LogOut } from 'lucide-react';
+import { User, Settings, Shield, Bell, Heart, Award, LogOut, TrendingUp, Target, Zap } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMoodTracker } from '@/hooks/useMoodTracker';
+import { useRealtimeStats } from '@/hooks/useRealtimeStats';
+import { useRealtimeMoodAnalytics } from '@/hooks/useRealtimeMoodAnalytics';
 import { MoodAvatar } from '@/components/MoodAvatar';
 import { NotificationCenter } from '@/components/NotificationCenter';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +17,8 @@ import { supabase } from '@/integrations/supabase/client';
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { currentMood, moodEntries } = useMoodTracker();
+  const { stats } = useRealtimeStats();
+  const { analytics } = useRealtimeMoodAnalytics();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
@@ -28,12 +32,7 @@ const Profile = () => {
     { label: 'Weekly Summary', enabled: true, key: 'weekly_summary' }
   ]);
 
-  const achievements = [
-    { title: '7-Day Streak', description: 'Tracked mood for 7 consecutive days', icon: '🔥', earned: true },
-    { title: 'First Steps', description: 'Completed your first wellness chat', icon: '👣', earned: true },
-    { title: 'Mindful Moments', description: 'Used 10 breathing exercises', icon: '🧘', earned: false },
-    { title: 'Mood Master', description: 'Tracked mood for 30 days', icon: '📊', earned: false }
-  ];
+  const achievements = stats.achievements || [];
 
   // Load user profile data
   useEffect(() => {
@@ -126,11 +125,14 @@ const Profile = () => {
               <CardContent className="space-y-4">
                 {/* Avatar Section */}
                 <div className="flex items-center gap-4 p-4 bg-gradient-wellness/5 rounded-lg border">
-                  <MoodAvatar mood={currentMood} size="lg" />
+                  <MoodAvatar mood={analytics.currentMood || currentMood} size="lg" />
                   <div>
                     <p className="font-medium">Current Mood Avatar</p>
                     <p className="text-sm text-muted-foreground">
-                      Based on your latest mood: <span className="capitalize font-medium">{currentMood}</span>
+                      Based on your latest mood: <span className="capitalize font-medium">{analytics.currentMood || currentMood}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Updates in real-time based on your chat messages
                     </p>
                   </div>
                 </div>
@@ -218,31 +220,59 @@ const Profile = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Stats */}
+            {/* Real-time Stats */}
             <Card className="bg-card/80 backdrop-blur-sm border-border/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Heart className="h-5 w-5" />
-                  Wellness Stats
+                  Live Wellness Stats
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold bg-gradient-wellness bg-clip-text text-transparent">
-                    {moodEntries.length > 0 ? Math.ceil((Date.now() - new Date(moodEntries[moodEntries.length - 1]?.created_at || Date.now()).getTime()) / (1000 * 60 * 60 * 24)) : 0}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Days Active</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-xl font-semibold">{moodEntries.length}</div>
-                    <p className="text-xs text-muted-foreground">Mood Entries</p>
-                  </div>
-                  <div>
-                    <div className="text-xl font-semibold">
-                      {moodEntries.filter(entry => entry.mood_category === 'happy' || entry.mood_category === 'good').length}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 bg-gradient-wellness/10 rounded-lg">
+                    <div className="text-2xl font-bold bg-gradient-wellness bg-clip-text text-transparent">
+                      {stats.dailyStreak}
                     </div>
-                    <p className="text-xs text-muted-foreground">Happy Days</p>
+                    <p className="text-xs text-muted-foreground">Day Streak</p>
+                  </div>
+                  <div className="text-center p-3 bg-gradient-focus/10 rounded-lg">
+                    <div className="text-2xl font-bold text-primary">
+                      {stats.totalChats}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Total Chats</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-lg font-semibold">{stats.totalMessages}</div>
+                    <p className="text-xs text-muted-foreground">Messages</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-semibold">{stats.wellnessScore}/100</div>
+                    <p className="text-xs text-muted-foreground">Wellness Score</p>
+                  </div>
+                </div>
+                
+                {/* Daily Goals */}
+                <div className="space-y-2 pt-2 border-t border-border/50">
+                  <h4 className="text-sm font-medium flex items-center gap-1">
+                    <Target className="h-4 w-4" />
+                    Today's Goals
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span>Chats: {stats.dailyGoals.chatGoal.current}/{stats.dailyGoals.chatGoal.target}</span>
+                      {stats.dailyGoals.chatGoal.completed && <span className="text-green-500">✓</span>}
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span>Mood Check: {stats.dailyGoals.moodCheckGoal.current}/{stats.dailyGoals.moodCheckGoal.target}</span>
+                      {stats.dailyGoals.moodCheckGoal.completed && <span className="text-green-500">✓</span>}
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span>Streak: {stats.dailyGoals.streakGoal.current}/{stats.dailyGoals.streakGoal.target}</span>
+                      {stats.dailyGoals.streakGoal.completed && <span className="text-green-500">✓</span>}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -253,12 +283,12 @@ const Profile = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Award className="h-5 w-5" />
-                  Achievements
+                  Achievements ({achievements.filter(a => a.earned).length}/{achievements.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {achievements.map((achievement, index) => (
+                  {achievements.slice(0, 4).map((achievement, index) => (
                     <div key={index} className={`p-3 rounded-lg border transition-gentle ${achievement.earned ? 'bg-gradient-wellness/10 border-primary/20' : 'bg-muted/30 border-border/50 opacity-60'}`}>
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{achievement.icon}</span>
@@ -274,10 +304,26 @@ const Profile = () => {
                           <p className="text-xs text-muted-foreground">
                             {achievement.description}
                           </p>
+                          {!achievement.earned && achievement.progress && (
+                            <div className="mt-1">
+                              <div className="w-full bg-muted rounded-full h-1">
+                                <div 
+                                  className="bg-primary h-1 rounded-full transition-all" 
+                                  style={{ width: `${achievement.progress}%` }}
+                                />
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">{achievement.progress}% complete</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
                   ))}
+                  {achievements.length > 4 && (
+                    <Button variant="ghost" size="sm" className="w-full">
+                      View All Achievements
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

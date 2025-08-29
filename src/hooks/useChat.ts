@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { useLocalChatStorage } from './useLocalChatStorage';
 
 export interface Message {
   id: string;
@@ -24,30 +25,27 @@ export const useChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const { toast } = useToast();
-
-  // Load conversations
-  const loadConversations = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('chat_conversations')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
-      setConversations(data || []);
-    } catch (error) {
-      console.error('Error loading conversations:', error);
-    }
-  }, []);
+  const { 
+    addConversation: addLocalConversation, 
+    addMessage: addLocalMessage, 
+    getMessages: getLocalMessages, 
+    getConversations: getLocalConversations 
+  } = useLocalChatStorage();
 
   // Load messages for a conversation
   const loadMessages = useCallback(async (conversationId: string) => {
     try {
       setIsLoading(true);
+      
+      // First try to load from local storage
+      const localMessages = getLocalMessages(conversationId);
+      if (localMessages.length > 0) {
+        setMessages(localMessages);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fallback to Supabase if no local messages
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
@@ -75,33 +73,45 @@ export const useChat = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, getLocalMessages]);
 
   // Create new conversation
   const createConversation = useCallback(async (firstMessage?: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!user) {
+        // Create local conversation if not authenticated
+        const localConv: Conversation = {
+          id: `local-${Date.now()}`,
+          title: firstMessage ? 
+            firstMessage.slice(0, 50) + (firstMessage.length > 50 ? '...' : '') : 
+            'New Conversation',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        addLocalConversation(localConv);
+        setCurrentConversationId(localConv.id);
+      setMessages([]);
+      return localConv.id;
+      }
 
       const title = firstMessage ? 
         firstMessage.slice(0, 50) + (firstMessage.length > 50 ? '...' : '') : 
         'New Conversation';
 
-      const { data, error } = await supabase
-        .from('chat_conversations')
-        .insert({
-          user_id: user.id,
-          title
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      // Create both local and remote conversation
+      const localConv: Conversation = {
+        id: `temp-${Date.now()}`,
+        title,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
       
-      setCurrentConversationId(data.id);
+      addLocalConversation(localConv);
+      setCurrentConversationId(localConv.id);
       setMessages([]);
-      await loadConversations();
-      return data.id;
+      return localConv.id;
     } catch (error) {
       console.error('Error creating conversation:', error);
       toast({
@@ -111,7 +121,7 @@ export const useChat = () => {
       });
       return null;
     }
-  }, [loadConversations, toast]);
+  }, [addLocalConversation, toast]);
 
   // Send message
   const sendMessage = useCallback(async (content: string) => {
@@ -134,7 +144,7 @@ export const useChat = () => {
         if (!conversationId) return;
       }
 
-      // Add user message to UI immediately
+      // Add user message to UI and local storage immediately
       const userMessage: Message = {
         id: Date.now().toString(),
         content,
@@ -142,6 +152,7 @@ export const useChat = () => {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, userMessage]);
+      addLocalMessage(conversationId, userMessage);
       setIsTyping(true);
 
       // Call Gemini API through edge function
@@ -155,7 +166,7 @@ export const useChat = () => {
 
       if (error) throw error;
 
-      // Add AI response to UI
+      // Add AI response to UI and local storage
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: data.response,
@@ -164,6 +175,7 @@ export const useChat = () => {
         mood: data.mood
       };
       setMessages(prev => [...prev, aiMessage]);
+      addLocalMessage(conversationId, aiMessage);
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -175,7 +187,7 @@ export const useChat = () => {
     } finally {
       setIsTyping(false);
     }
-  }, [currentConversationId, createConversation, toast]);
+  }, [currentConversationId, createConversation, toast, addLocalMessage]);
 
   // Set up real-time subscriptions
   useEffect(() => {
@@ -216,7 +228,43 @@ export const useChat = () => {
     };
   }, [currentConversationId]);
 
-  // Load conversations on mount
+  // Load conversations on mount - prioritize local storage
+  const loadConversations = useCallback(async () => {
+    try {
+      // First load from local storage
+      const localConversations = getLocalConversations();
+      if (localConversations.length > 0) {
+        setConversations(localConversations);
+      }
+
+      // Also try to load from Supabase if authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase
+          .from('chat_conversations')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false });
+
+        if (!error && data) {
+          // Merge with local conversations, avoiding duplicates
+          const mergedConversations = [...localConversations];
+          data.forEach(remoteConv => {
+            if (!mergedConversations.find(local => local.id === remoteConv.id)) {
+              mergedConversations.push(remoteConv);
+            }
+          });
+          setConversations(mergedConversations);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      // Fallback to local conversations
+      const localConversations = getLocalConversations();
+      setConversations(localConversations);
+    }
+  }, [getLocalConversations]);
+
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
